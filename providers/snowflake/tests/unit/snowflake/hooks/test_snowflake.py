@@ -443,8 +443,22 @@ class TestPytestSnowflakeHook:
             assert pkb == conn_params["private_key"]
 
     def test_get_conn_params_should_support_private_auth_in_connection(
-        self, base64_encoded_encrypted_private_key: Path
+        self, base64_encoded_encrypted_private_key: str, encrypted_temporary_private_key: Path
     ):
+        private_key_content = encrypted_temporary_private_key.read_text()
+
+        p_key = serialization.load_pem_private_key(
+            private_key_content.encode(),
+            password=_PASSWORD.encode(),
+            backend=default_backend(),
+        )
+
+        pkb = p_key.private_bytes(
+            encoding=serialization.Encoding.DER,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption(),
+        )
+
         connection_kwargs: Any = {
             **BASE_CONNECTION_KWARGS,
             "password": _PASSWORD,
@@ -457,8 +471,12 @@ class TestPytestSnowflakeHook:
                 "private_key_content": base64_encoded_encrypted_private_key,
             },
         }
-        with mock.patch.dict("os.environ", AIRFLOW_CONN_TEST_CONN=Connection(**connection_kwargs).get_uri()):
-            assert "private_key" in SnowflakeHook(snowflake_conn_id="test_conn")._get_conn_params()
+        with (
+            mock.patch.dict("os.environ", AIRFLOW_CONN_TEST_CONN=Connection(**connection_kwargs).get_uri())
+        ):
+            conn_params = SnowflakeHook(snowflake_conn_id="test_conn")._get_conn_params()
+            assert "private_key" in conn_params
+            assert conn_params["private_key"] == pkb
 
     @pytest.mark.parametrize("include_params", [True, False])
     def test_hook_param_beats_extra(self, include_params):
