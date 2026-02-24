@@ -550,7 +550,7 @@ class SnowflakeHook(DbApiHook):
 
     def get_private_key(self) -> PrivateKeyTypes | None:
         """Get the private key from snowflake connection."""
-        conn = self.get_connection(self.snowflake_conn_id)
+        conn = self.get_connection(self.get_conn_id())
         extra_dict = conn.extra_dejson
 
         # If private_key_file is specified in the extra json, load the contents of the file as a private key.
