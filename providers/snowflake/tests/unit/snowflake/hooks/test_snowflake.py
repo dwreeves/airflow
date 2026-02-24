@@ -471,9 +471,7 @@ class TestPytestSnowflakeHook:
                 "private_key_content": base64_encoded_encrypted_private_key,
             },
         }
-        with (
-            mock.patch.dict("os.environ", AIRFLOW_CONN_TEST_CONN=Connection(**connection_kwargs).get_uri())
-        ):
+        with mock.patch.dict("os.environ", AIRFLOW_CONN_TEST_CONN=Connection(**connection_kwargs).get_uri()):
             conn_params = SnowflakeHook(snowflake_conn_id="test_conn")._get_conn_params()
             assert "private_key" in conn_params
             assert conn_params["private_key"] == pkb
